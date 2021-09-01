@@ -2,9 +2,9 @@
 
 # -- Project information
 
-project = 'Lumache'
-copyright = '2021, Graziella'
-author = 'Graziella'
+project = 'RedDatabaseLab'
+copyright = '2021, Roman Simakov'
+author = 'Роман Симаков'
 
 release = '0.1'
 version = '0.1.0'
