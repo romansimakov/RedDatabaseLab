@@ -45,6 +45,7 @@
     $ mkdir flaskr
 
 ``flaskr/__init__.py``
+    
 .. code-block:: python
 
     import os
