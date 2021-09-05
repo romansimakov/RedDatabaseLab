@@ -45,14 +45,14 @@
     $ mkdir flaskr
 
 ``flaskr/__init__.py``
-    
+
 .. code-block:: python
 
     import os
 
     from flask import Flask
 
-    def create_app():
+    def create_app(test_config=None):
         # create and configure the app
         app = Flask(__name__, instance_relative_config=True)
         app.config.from_mapping(
@@ -62,6 +62,13 @@
             PASSWORD='masterkey',
             LIBRARY=os.path.join(app.root_path, 'rdb/libfbclient.so')
         )
+
+        if test_config is None:
+            # load the instance config, if it exists, when not testing
+            app.config.from_pyfile('config.py', silent=True)
+        else:
+            # load the test config if passed in
+            app.config.from_mapping(test_config)
 
         # ensure the instance folder exists
         try:
@@ -75,4 +82,55 @@
             return 'Hello, World!'
 
         return app
+
+``create_app`` это функция *фабрика приложения*. Позже она будет дополнена, но и сейчас она многое делает:
+
+#. :code:`app = Flask(__name__, instance_relative_config=True)` создает объект приложения Flask:
+    :__name__: имя текущего модуля Python. Приложению необходимо знать где оно располагается, чтобы установить некоторые пути.
+    :instance_relative_config: говорит приложению, что файлы конфигурации размещаются относительно каталога ``instance``. Он размещается вне каталога ``flaskr`` и содержит локальные данные: конфигурационные файлы, БД.
+
+#. :code:`app.config.from_mapping` устанавливает значения параметров конфигурации по умолчанию:
+    :SECRET_KEY: используется классом Flask и расширениями для обеспечения безопасности хранимых данных. Значение ``dev`` позволяет удобно разрабатывать приложения, но должно быть заменено случайным значением при поставке приложения заказчику.
+    :DATABASE: путь к файлу БД. БД размещается в каталоге ``instance``. В зависимости от нужд приложения, может быть любым, в том числе псевдонимом БД на удаленном сервере. В нашем случае мы воспользуемся встроенным сервером.
+    :USER: Имя пользователя, от которого будет производиться соединение.
+    :PASSWORD: Пароль. Для встроенного сервера игнорируется.
+    :LIBRARY: путь до клиентской библиотеки ``libfbclient.so``, которую мы установим в следующей части.
+
+#. :code:`app.config.from_pyfile` перезаписывает значения параметров конфигурации значениями из файла ``config.py`` каталога ``instance``, если он существует. Например, при поставке приложения в нем можно указать реальное значение ``SECRET_KEY``.
+
+#. :code:`os.makedirs()` гарантирует существование каталога ``app.instance_path``. Flask не создает каталог автоматически, но он нужен для файла БД.
+
+#. :code:`@app.route()` создает простой маршрут, чтобы убедиться что приложение работает, прежде чем продолжить его разрабатывать. Это связывает URL ``/hello`` и функцию, которая сформирует ответ. В данном случае строку 'Hello, World!'.
+
+Запуск приложения
+"""""""""""""""""
+
+Теперь можно запустить приложение, используя команду :code:`flask`. Укажите Flask где искать приложение и запустите его в режиме разработчика.
+
+.. warning:: Вы должны быть в каталоге redflaskr, но не в его подкаталогах.
+
+Режим разработчика показывает интерактивный отладчик когда страница выбрасывает исключение и перезапускает сервер, когда вы делаете изменения в коде. Его можно оставить запущенным и просто обновлять страницу в браузере по мере разработки.
+
+.. code-block:: bash
+
+    $ export FLASK_APP=flaskr
+    $ export FLASK_ENV=development
+    $ flask run
+
+Вы увидите вывод, подобный этому:
+
+.. code-block:: console
+
+  * Serving Flask app "flaskr"
+  * Environment: development
+  * Debug mode: on
+  * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+  * Restarting with stat
+  * Debugger is active!
+  * Debugger PIN: 855-212-761
+
+Перейдите по адресу http://127.0.0.1:5000/hello в браузере и вы увидите сообщение "Hello, World!".
+
+Работа с БД
+-----------
 
