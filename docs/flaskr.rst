@@ -1,3 +1,6 @@
+.. _Flaskr: https://flask.palletsprojects.com/en/2.0.x/tutorial/
+.. _СУБД Ред База Данных: https://reddatabase.ru
+
 Разработка web-приложение на Flask
 ==================================
 
@@ -10,7 +13,7 @@
 
 Прежде всего необходимо создать каталог, в котором будет располагаться проект.
 
-.. code-block:: shell
+.. code-block:: bash
 
     $ mkdir redflaskr
     $ cd redflaskr
@@ -19,6 +22,56 @@
 
 Далее будем предполагать что вся работа выполняется в каталоге redflaskr. Все пути к файлам будем указывать относительно него.
 
-.. _Flaskr: https://flask.palletsprojects.com/en/2.0.x/tutorial/
+Проекты на Python используют пакеты для организации кода и мы этим воспользуемся.
 
-.. _СУБД Ред База Данных: https://reddatabase.ru
+Каталог проекта будет содержать:
+
+* flaskr: Пакет Python, содержащий код приложения и другие файлы.
+* venv: Виртуальное окружение, в котором будет установлен Flask, драйвер СУБД fdb и другие зависимости.
+
+Приложение Flask это объект (instance) класса Flask. Все, что связано с приложением (настройки, URL адреса, прочее) будет настраиваться в этом объекте.
+
+Наиболее простой путь создания приложения - это создать глобальный объект непосредственно в начале программы, однако по мере роста проекта это может принести проблемы.
+
+Вместо создания объекта глобально, мы будем создавать его внутри функции. Такая функция называется *фабрикой приложения* (application factory). Все настройки, регистрации и т.п. будут происходить внутри функции, после чего объект приложения будет возвращен.
+
+Фабрика приложения
+""""""""""""""""""
+
+Создайте каталог ``flaskr``, а внутри файл ``__init__.py``, который содержит *фабрику приложения* и говорит Python, что катало ``flaskr`` должен рассматриваться как пакет.
+
+.. code-block:: bash
+
+    $ mkdir flaskr
+
+``flaskr/__init__.py``
+.. code-block:: python
+
+    import os
+
+    from flask import Flask
+
+    def create_app():
+        # create and configure the app
+        app = Flask(__name__, instance_relative_config=True)
+        app.config.from_mapping(
+            SECRET_KEY='dev',
+            DATABASE=os.path.join(app.instance_path, 'flaskr.fdb'),
+            USER='sysdba',
+            PASSWORD='masterkey',
+            LIBRARY=os.path.join(app.root_path, 'rdb/libfbclient.so')
+        )
+
+        # ensure the instance folder exists
+        try:
+            os.makedirs(app.instance_path)
+        except OSError:
+            pass
+
+        # a simple page that says hello
+        @app.route('/hello')
+        def hello():
+            return 'Hello, World!'
+
+        return app
+
