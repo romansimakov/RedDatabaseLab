@@ -615,3 +615,61 @@ Jinja похожа на Python. Специальные разделители и
 
 ``flaskr/templates/auth/register.html``
 
+.. code-block:: html
+
+    {% extends 'base.html' %}
+
+    {% block header %}
+    <h1>{% block title %}Register{% endblock %}</h1>
+    {% endblock %}
+
+    {% block content %}
+    <form method="post">
+        <label for="username">Username</label>
+        <input name="username" id="username" required>
+        <label for="password">Password</label>
+        <input type="password" name="password" id="password" required>
+        <input type="submit" value="Register">
+    </form>
+    {% endblock %}
+
+``{% extends 'base.html' %}`` говорит Jinja что этот шаблон заменяет блоки базового шаблона. Все отображаемое содержимое должно содержаться внутри блока ``{% block %}``, которые перезаписывают блоки базового шаблона.
+
+Здесь используется полезный паттерн размещения блока ``{% block title %}`` внутри блока ``{% block header %}``. Это установит ``title block`` и затем итоговое значение будет использовано в ``header block``. Так что оба заголовка используют одно и тоже название, без необходимости писать его дважды.
+
+Вход
+----
+
+Этот шаблон аналогичен шаблону регистрации, за исключением заголовка и кнопки submit.
+
+``flaskr/templates/auth/login.html``
+
+.. code-block:: html
+
+    {% extends 'base.html' %}
+
+    {% block header %}
+    <h1>{% block title %}Log In{% endblock %}</h1>
+    {% endblock %}
+
+    {% block content %}
+    <form method="post">
+        <label for="username">Username</label>
+        <input name="username" id="username" required>
+        <label for="password">Password</label>
+        <input type="password" name="password" id="password" required>
+        <input type="submit" value="Log In">
+    </form>
+    {% endblock %}
+
+Регистрация
+-----------
+
+Теперь когда все шаблоны аутентификации написаны, можно зарегистрировать пользователя. Убедитесь что сервер запущен и перейдите по адресу http://127.0.0.1:5000/auth/register.
+
+Попробуйте нажать на кнопку "Register" без заполнения формы и посмотрите на ошибки.
+
+При успешном заполнении имени пользователя и пароля, вы будете перенаправлены на страницу логина. Попробуйте ввести некорректный логин или пароль.
+
+Если вы войдете в систему, то все равно должны увидеть ошибку, т.к. еще нет представления для ``index``.
+
