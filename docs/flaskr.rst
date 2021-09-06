@@ -725,3 +725,275 @@ Flask автоматически добавляет представление `
 
 Больше о CSS можно узнать из документации https://developer.mozilla.org/docs/Web/CSS
 
+Эскиз блога
+===========
+
+Будут использованы теже подходы, что и для написания эскиза аутентификации. Блог показывает список всех постов, позволяя авторизованным пользователям создавать посты, а авторам менять и удалять посты.
+
+Во время реализации каждого представления, оставляйте сервер запущенным (в режиме разработчика). После сохранения изменений, переходите по соответствующему URL в браузере и тестируйте его.
+
+Объявим эскиз и добавим его в *фабрику приложения*.
+
+``flaskr/blog.py``
+
+.. code-block:: python
+
+    from flask import (
+        Blueprint, flash, g, redirect, render_template, request, url_for
+    )
+    from werkzeug.exceptions import abort
+
+    from flaskr.auth import login_required
+    from flaskr.db import get_db
+
+    bp = Blueprint('blog', __name__)
+
+Импортируйте и зарегистрируйте эскиз.
+
+``flaskr/__init__.py``
+
+.. code-block:: python
+
+    def create_app():
+        app = ...
+        # existing code omitted
+
+        from . import blog
+        app.register_blueprint(blog.bp)
+        app.add_url_rule('/', endpoint='index')
+
+        return app
+
+В отличие от эскиза аутентификации, эскиз блога не имеет ``url_prefix``. Таким образом представление ``index`` будет размещаться в корне ``/``, представление ``create`` по адресу ``/create`` и т.д. Блог - основная функция Flaskr и логично сделать ``index`` основным представлением.
+
+Однако, точка входа для ``index`` будет ``blog.index``. Некоторые представления аутентификации ссылаются на простой ``index``. ``app.add_url_rule()`` связывает точку входа ``index`` с адресом ``/``, так что ``url_for('index')`` и ``url_for('blog.index')`` будут работать одинаково, генерируя одинаковый адрес URL.
+
+В других приложениях вам может потребоваться дать другой ``url_prefix`` для эскиза и определить другой ``index`` для приложения, подобный представлению ``hello``.
+
+Представление Index
+-------------------
+
+Индекс будет показывать все посты, начиная с последних. SQL запрос использует JOIN для получения аутентификационной информации из таблицы ``users``.
+
+``flaskr/blog.py``
+
+.. code-block:: python
+
+    @bp.route('/')
+    def index():
+        db = get_db()
+        posts = db.cursor().execute(
+            'SELECT p.id, title, body, created, author_id, username'
+            ' FROM posts p JOIN users u ON p.author_id = u.id'
+            ' ORDER BY created DESC'
+        ).fetchallmap()
+        return render_template('blog/index.html', posts=posts)
+
+``flaskr/templates/blog/index.html``
+
+.. code-block:: html
+    
+    {% extends 'base.html' %}
+
+    {% block header %}
+    <h1>{% block title %}Posts{% endblock %}</h1>
+    {% if g.user %}
+        <a class="action" href="{{ url_for('blog.create') }}">New</a>
+    {% endif %}
+    {% endblock %}
+
+    {% block content %}
+    {% for post in posts %}
+        <article class="post">
+        <header>
+            <div>
+            <h1>{{ post['title'] }}</h1>
+            <div class="about">by {{ post['username'] }} on {{ post['created'].strftime('%Y-%m-%d') }}</div>
+            </div>
+            {% if g.user['id'] == post['author_id'] %}
+            <a class="action" href="{{ url_for('blog.update', id=post['id']) }}">Edit</a>
+            {% endif %}
+        </header>
+        <p class="body">{{ post['body'] }}</p>
+        </article>
+        {% if not loop.last %}
+        <hr>
+        {% endif %}
+    {% endfor %}
+    {% endblock %}    
+
+Когда пользователь авторизован, блок ``header`` добавляет ссылку на представление ``create``. Когда пользователь автор поста, он увидит ссылку "Edit" связанную с представлением ``update`` для поста. ``loop.last`` - это специальная переменная, доступная внутри циклов Jinja. Она используется для исключения печати разделительной линии для последнего поста.
+
+Представление Create
+--------------------
+
+Представление ``create`` походе на представление ``register``. Либо отображается форма для заполнения данных, либо введенные данные проверяются и пост добавляется в базу данных или показывается ошибка.
+
+*Декоратор* ``login_required``, который мы написали ранее, будет использован для представлений блога. Пользователь должен быть авторизован, чтобы открывать эти представления, иначе он будет перенаправлен на страницу входа.
+
+``flaskr/blog.py``
+
+.. code-block:: python
+
+    @bp.route('/create', methods=('GET', 'POST'))
+    @login_required
+    def create():
+        if request.method == 'POST':
+            title = request.form['title']
+            body = request.form['body']
+            error = None
+
+            if not title:
+                error = 'Title is required.'
+
+            if error is not None:
+                flash(error)
+            else:
+                db = get_db()
+                db.cursor().execute(
+                    'INSERT INTO posts (title, body, author_id)'
+                    ' VALUES (?, ?, ?)',
+                    (title, body, g.user['id'])
+                )
+                db.commit()
+                return redirect(url_for('blog.index'))
+
+        return render_template('blog/create.html')
+
+``flaskr/templates/blog/create.html``
+
+.. code-block:: html
+
+    {% extends 'base.html' %}
+
+    {% block header %}
+    <h1>{% block title %}New Post{% endblock %}</h1>
+    {% endblock %}
+
+    {% block content %}
+    <form method="post">
+        <label for="title">Title</label>
+        <input name="title" id="title" value="{{ request.form['title'] }}" required>
+        <label for="body">Body</label>
+        <textarea name="body" id="body">{{ request.form['body'] }}</textarea>
+        <input type="submit" value="Save">
+    </form>
+    {% endblock %}
+
+Представление Update
+--------------------
+
+Представлениям ``update`` и ``delete`` необходимо извлечь пост по его идентификатору и сравнить автора с зарегистрированным пользователем. Чтобы избежать дублирования кода, напишем функцию получения поста и в дальнейшем используем ее в обоих представлениях.
+
+``flaskr/blog.py``
+
+.. code-block:: python
+
+    def get_post(id, check_author=True):
+        post = get_db().cursor().execute(
+            'SELECT p.id, title, body, created, author_id, username'
+            ' FROM posts p JOIN users u ON p.author_id = u.id'
+            ' WHERE p.id = ?',
+            (id,)
+        ).fetchonemap()
+
+        if post is None:
+            abort(404, f"Post id {id} doesn't exist.")
+
+        if check_author and post['author_id'] != g.user['id']:
+            abort(403)
+
+        return post
+
+``abort()`` выбрасывает специальное исключение, которое возвращает код статуса HTTP. Она принимает текст ошибки. Код 404 означает что страница не найдена (Not Found), а код 403 означает что доступ к странице запрещен (Forbidden).
+
+Аргумент ``check_author`` может быть полезен в будущем.
+
+Код представления ``update``.
+
+``flaskr/blog.py``
+
+.. code-block:: python
+
+    @bp.route('/<int:id>/update', methods=('GET', 'POST'))
+    @login_required
+    def update(id):
+        post = get_post(id)
+
+        if request.method == 'POST':
+            title = request.form['title']
+            body = request.form['body']
+            error = None
+
+            if not title:
+                error = 'Title is required.'
+
+            if error is not None:
+                flash(error)
+            else:
+                db = get_db()
+                db.cursor().execute(
+                    'UPDATE posts SET title = ?, body = ?'
+                    ' WHERE id = ?',
+                    (title, body, id)
+                )
+                db.commit()
+                return redirect(url_for('blog.index'))
+
+        return render_template('blog/update.html', post=post)
+
+В отличие от представлений, что мы писали до этого, ``update`` принимает аргумент, ``id``. На это указывает ``<int:id>``. Реальный адрес будет выглядеть, например, ``/1/update``. Flask извлечет ``1`` из адреса, убедиться что это значение типа ``int`` и передаст его как аргумент функции. Если не указать ``int:`` то аргумент будет ``string``. Чтобы генерировать адреса для страницы обновления, ``url_for()`` необходимо передать ``id`` для заполнения: ``url_for('blog.update', id=post['id'])``.
+
+Представления ``create`` и ``update`` похожи друг на друга. Основное отличие в том, что ``update`` использует объект ``post`` и запрос ``UPDATE`` вместо ``INSERT``. Теоретически можно придумать единый шаблон для этих двух представлений, но для наших целей мы не будем усложнять.
+
+``flaskr/templates/blog/update.html``
+
+.. code-block:: html
+
+    {% extends 'base.html' %}
+
+    {% block header %}
+    <h1>{% block title %}Edit "{{ post['title'] }}"{% endblock %}</h1>
+    {% endblock %}
+
+    {% block content %}
+    <form method="post">
+        <label for="title">Title</label>
+        <input name="title" id="title"
+        value="{{ request.form['title'] or post['title'] }}" required>
+        <label for="body">Body</label>
+        <textarea name="body" id="body">{{ request.form['body'] or post['body'] }}</textarea>
+        <input type="submit" value="Save">
+    </form>
+    <hr>
+    <form action="{{ url_for('blog.delete', id=post['id']) }}" method="post">
+        <input class="danger" type="submit" value="Delete" onclick="return confirm('Are you sure?');">
+    </form>
+    {% endblock %}
+
+Шаблон имеет две формы. Первая отправляет отредактированные данные на текущую страницу ``/<id>/update``. Вторая форма содержит единственную кнопку и определяет атрибут ``action`` ссылающийся на представление ``delete``. Кнопка использует JavaScript для запроса подтверждения действия.
+
+Паттерн ``{{ request.form['title'] or post['title'] }}`` используется в зависимости от данных, которые надо показать в форме. Когда форма не отправлена, показываются данные оригинального поста, но если в форму переданы некорректные данные, необходимо показать это чтобы пользователь исправил ошибку. Для этого используется ``request.form``. ``request`` - это еще одна переменная, автоматически доступная в шаблонах.
+
+Представление Delete
+--------------------
+
+Это представление не имеет своего шаблона, а кнопка удаления является частью шаблона ``update.html``. Таким образом, достаточно написать только функцию представление и обработать только метод ``POST``, а потом перенаправить на представление ``index``.
+
+``flaskr/blog.py``
+
+.. code-block:: python
+
+    @bp.route('/<int:id>/delete', methods=('POST',))
+    @login_required
+    def delete(id):
+        get_post(id)
+        db = get_db()
+        db.cursor().execute('DELETE FROM posts WHERE id = ?', (id,))
+        db.commit()
+        return redirect(url_for('blog.index'))
+
+.. important:: На этом разработка первого приложения завершена. Необходимо его тщательно протестировать.
+
+Для изучения того, как тестировать и распространять подобные приложения рекомендуем изучить материалы по Flask - https://flask.palletsprojects.com/en/2.0.x/tutorial
+
