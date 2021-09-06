@@ -673,3 +673,55 @@ Jinja похожа на Python. Специальные разделители и
 
 Если вы войдете в систему, то все равно должны увидеть ошибку, т.к. еще нет представления для ``index``.
 
+Статические файлы
+=================
+
+Представления аутентификации и шаблоны выглядят слишком примитивными. Чтобы немного стилизовать HTML добавим CSS. Таблицы стилей являются статическими файлами.
+
+Flask автоматически добавляет представление ``static``, которое принимает путь относительно каталога ``flaskr/static`` и обрабатывает его. Базовый шаблон ``base.html`` уже имеет статическую ссылку на файл ``style.css``:
+
+.. code-block:: html
+
+    {{ url_for('static', filename='style.css') }}
+
+Кроме CSS могут быть и другие типы статических файлов: JavaScript, изображения и т.п. Все они располагаются в каталог ``flaskr/static`` и для ссылки используется ``url_for('static', filename='...')``.
+
+Здесь мы не делаем упор на изучение CSS, так что просто скопируем содержимое файла в:
+
+``flaskr/static/style.css``
+
+.. code-block:: css
+
+    html { font-family: sans-serif; background: #eee; padding: 1rem; }
+    body { max-width: 960px; margin: 0 auto; background: white; }
+    h1 { font-family: serif; color: #377ba8; margin: 1rem 0; }
+    a { color: #377ba8; }
+    hr { border: none; border-top: 1px solid lightgray; }
+    nav { background: lightgray; display: flex; align-items: center; padding: 0 0.5rem; }
+    nav h1 { flex: auto; margin: 0; }
+    nav h1 a { text-decoration: none; padding: 0.25rem 0.5rem; }
+    nav ul  { display: flex; list-style: none; margin: 0; padding: 0; }
+    nav ul li a, nav ul li span, header .action { display: block; padding: 0.5rem; }
+    .content { padding: 0 1rem 1rem; }
+    .content > header { border-bottom: 1px solid lightgray; display: flex; align-items: flex-end; }
+    .content > header h1 { flex: auto; margin: 1rem 0 0.25rem 0; }
+    .flash { margin: 1em 0; padding: 1em; background: #cae6f6; border: 1px solid #377ba8; }
+    .post > header { display: flex; align-items: flex-end; font-size: 0.85em; }
+    .post > header > div:first-of-type { flex: auto; }
+    .post > header h1 { font-size: 1.5em; margin-bottom: 0; }
+    .post .about { color: slategray; font-style: italic; }
+    .post .body { white-space: pre-line; }
+    .content:last-child { margin-bottom: 0; }
+    .content form { margin: 1em 0; display: flex; flex-direction: column; }
+    .content label { font-weight: bold; margin-bottom: 0.5em; }
+    .content input, .content textarea { margin-bottom: 1em; }
+    .content textarea { min-height: 12em; resize: vertical; }
+    input.danger { color: #cc2f2e; }
+    input[type=submit] { align-self: start; min-width: 10em; }
+
+Откройте ссылку http://127.0.0.1:5000/auth/login и сейчас страница должна выглядеть как на картинке.
+
+.. image:: flaskr_login.png
+
+Больше о CSS можно узнать из документации https://developer.mozilla.org/docs/Web/CSS
+
