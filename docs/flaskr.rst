@@ -2,6 +2,8 @@
 .. _Jinja: https://jinja.palletsprojects.com/en/3.0.x/templates/
 .. _СУБД Ред База Данных: https://reddatabase.ru
 
+.. flast-tutorial:
+
 **********************************
 Разработка web-приложение на Flask
 **********************************

@@ -49,7 +49,7 @@
 2.	Пример. Из таблицы `EMPLOYEE` необходимо выбрать всех сотрудников из списка стран `{Canada, USA}`
 (таблица `JOB_COUNTRY`), у которых заработная плата `SALARY` превышает 100000.
  
- .. code-block:: sql
+.. code-block:: sql
     
     SELECT * FROM EMPLOYEE E WHERE UPPER(E.JOB_COUNTRY) IN ('CANADA', 'USA')  AND E.SALARY > 100000
      
