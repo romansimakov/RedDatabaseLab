@@ -6,6 +6,7 @@
 ==========
 
 .. toctree::
+   :numbered:
 
    design
    select
