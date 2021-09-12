@@ -1,5 +1,4 @@
 .. _Flask: https://flask.palletsprojects.com/en/2.0.x/tutorial/
-.. _СУБД Ред База Данных: https://reddatabase.ru
 .. _Jinja: https://jinja.palletsprojects.com/en/3.0.x/templates/
 
 **********************************
