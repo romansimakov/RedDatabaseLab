@@ -14,6 +14,7 @@
    select
    join
    window
+   qt_app
    web_app
    procedure
 
