@@ -26,3 +26,4 @@
    :numbered:
 
    flaskr
+   qt
