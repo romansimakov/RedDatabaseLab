@@ -47,8 +47,8 @@
 
     .. image:: img/design/table_create.png
 
-5.	Внешние ключи указываются на вкладке “Ограничения”.
+5.	Внешние ключи указываются на вкладке "Ограничения".
 
-
+    .. image:: img/design/db_restrictions.png
 
 .. _СУБД Ред База Данных: https://reddatabase.ru
