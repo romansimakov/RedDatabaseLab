@@ -723,7 +723,7 @@ Flask автоматически добавляет представление `
 
 Откройте ссылку http://127.0.0.1:5000/auth/login и сейчас страница должна выглядеть как на картинке.
 
-.. image:: flaskr_login.png
+.. image:: img/flaskr/flaskr_login.png
 
 Больше о CSS можно узнать из документации https://developer.mozilla.org/docs/Web/CSS
 
