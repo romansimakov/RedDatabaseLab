@@ -25,5 +25,5 @@
    :maxdepth: 2
    :numbered:
 
-   flaskr
    qt
+   flaskr
